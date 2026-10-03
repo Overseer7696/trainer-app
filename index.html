@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Тренер</title>
+<style>
+/* ============ ПЕРЕМЕННЫЕ И ТЕМЫ ============ */
+:root {
+  --bg: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-header: #1a1a1a;
+  --bg-input: #f5f5f7;
+  --text: #1a1a1a;
+  --text-muted: #777;
+  --border: #e2e2e2;
+  --accent: #ff6b35;
+  --accent-hover: #e85a25;
+  --success: #2e7d32;
+  --success-bg: #e8f5e9;
+  --danger: #d32f2f;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --radius: 12px;
+}
+[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --bg-card: #1c1c1e;
+  --bg-header: #000000;
+  --bg-input: #2c2c2e;
+  --text: #f2f2f7;
+  --text-muted: #8e8e93;
+  --border: #2c2c2e;
+  --accent: #ff7b45;
+  --accent-hover: #ff8b55;
+  --success: #4caf50;
+  --success-bg: #1b3a1d;
+  --danger: #ff453a;
+  --shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  padding-bottom: 90px;
+  transition: background 0.2s, color 0.2s;
+  overscroll-behavior-y: none;
+}
+
+/* ============ ШАПКА ============ */
+.app-header {
+  background: var(--bg-header);
+  color: #fff;
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.header-spacer { flex: 1; }
+.theme-btn {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ============ НИЖНЯЯ НАВИГАЦИЯ ============ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+}
+.nav-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 4px 12px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.15s;
+}
+.nav-btn .icon { font-size: 20px; line-height: 1; }
+.nav-btn.active { color: var(--accent); }
+
+/* ============ КОНТЕНТ ============ */
+.app-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 18px 14px;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.2s; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1 { font-size: 22px; margin-bottom: 16px; font-weight: 700; }
+h2 { font-size: 17px; margin-bottom: 10px; }
+h3 { font-size: 15px; margin-bottom: 8px; }
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.tab-header h1 { margin: 0; }
+
+/* ============ КАРТОЧКИ ============ */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.card-icon { font-size: 22px; margin-bottom: 4px; }
+.card-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+.card-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ============ СПИСКИ ============ */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.list-item {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.1s;
+  border-left: 4px solid var(--accent);
+}
+.list-item:active { transform: scale(0.98); }
+.list-item-info { flex: 1; min-width: 0; }
+.list-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg-input);
+  flex-shrink: 0;
+}
+.list-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.icon-btn:active { background: var(--border); }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.empty-state .emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+
+/* ============ КНОПКИ ============ */
+.btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .btn-block {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:active { background: var(--accent-hover); }
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.btn-block { width: 100%; display: block; }
+button:active { transform: scale(0.97); }
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ============ ФОРМЫ ============ */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.search-input {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  flex: 1;
+  min-width: 120px;
+  -webkit-appearance: none;
+}
+
+/* ============ МОДАЛКА ============ */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: var(--bg-card);
+  border-radius: 18px 18px 0 0;
+  width: 100%;
+  max-width: 720px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.modal-header h2 { font-size: 17px; margin: 0; }
+.modal-close {
+  background: var(--bg-input);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text);
+}
+.modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0));
+}
+.modal-footer button { flex: 1; }
+
+/* ============ TOAST ============ */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-header);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  z-index: 3000;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  animation: fadeIn 0.2s;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.hidden { display: none; }
+
+/* ============ БЕЙДЖИ ============ */
+.badge {
+  display: inline-block;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-right: 5px;
+  margin-bottom: 4px;
+}
+.badge-accent { background: var(--accent); color: #fff; }
+
+/* ============ ТАБЛИЦЫ ============ */
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 13px;
+}
+table.data-table th {
+  background: var(--bg-input);
+  padding: 8px 6px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+table.data-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+}
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Тренер">
+</head>
+<body>
+
+<!-- ШАПКА -->
+<header class="app-header">
+  <div class="logo">🏋️ Тренер</div>
+  <div class="header-spacer"></div>
+  <button class="theme-btn" id="themeToggle">🌙</button>
+</header>
+
+<!-- ОСНОВНОЙ КОНТЕНТ -->
+<main class="app-main">
+
+  <!-- ОБЗОР -->
+  <section id="tab-dashboard" class="tab-content active">
+    <h1>Обзор</h1>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">👥</div>
+        <div class="card-value" id="statClients">0</div>
+        <div class="card-label">Клиентов</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📚</div>
+        <div class="card-value" id="statExercises">0</div>
+        <div class="card-label">Упражнений</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-value" id="statWorkouts">0</div>
+        <div class="card-label">Тренировок</div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="btn-primary btn-block" onclick="App.goTo('clients')">👥 Клиенты</button>
+      <button class="btn-secondary btn-block" onclick="App.goTo('library')">📚 Библиотека упражнений</button>
+    </div>
+  </section>
+
+  <!-- КЛИЕНТЫ -->
+  <section id="tab-clients" class="tab-content">
+    <div class="tab-header">
+      <h1>Клиенты</h1>
+      <button class="btn-primary" id="addClientBtn">+ Добавить</button>
+    </div>
+    <div id="clientsList" class="list-container"></div>
+  </section>
+
+  <!-- БИБЛИОТЕКА -->
+  <section id="tab-library" class="tab-content">
+    <div class="tab-header">
+      <h1>Упражнения</h1>
+      <button class="btn-primary" id="addExerciseBtn">+ Добавить</button>
+    </div>
+    <div style="margin-bottom:14px;">
+      <input type="search" id="librarySearch" placeholder="🔍 Поиск..." class="search-input" style="width:100%;">
+    </div>
+    <div id="libraryList" class="list-container"></div>
+  </section>
+
+  <!-- ИСТОРИЯ -->
+  <section id="tab-history" class="tab-content">
+    <h1>История</h1>
+    <div id="historyList" class="list-container"></div>
+  </section>
+
+</main>
+
+<!-- НИЖНЯЯ НАВИГАЦИЯ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="dashboard">
+    <span class="icon">📊</span>Обзор
+  </button>
+  <button class="nav-btn" data-tab="clients">
+    <span class="icon">👥</span>Клиенты
+  </button>
+  <button class="nav-btn" data-tab="library">
+    <span class="icon">📚</span>База
+  </button>
+  <button class="nav-btn" data-tab="history">
+    <span class="icon">📈</span>История
+  </button>
+</nav>
+
+<!-- МОДАЛКА -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Заголовок</h2>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* ============================================================
+   ЧАСТЬ 2: ХРАНИЛИЩЕ, БИБЛИОТЕКА, НАВИГАЦИЯ, ТЕМА
+   ============================================================ */
+
+/* ==================== STORAGE ==================== */
+const Storage = {
+  KEY: 'trainer_app_v1',
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error('Ошибка чтения:', e);
+      return null;
+    }
+  },
+
+  save(data) {
+    try {
+      localStorage.setItem(this.KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('Ошибка сохранения:', e);
+      Toast.show('⚠️ Не удалось сохранить данные');
+    }
+  },
+
+  clear() {
+    localStorage.removeItem(this.KEY);
+  }
+};
+
+/* ==================== СОСТОЯНИЕ ==================== */
+const State = {
+  data: {
+    clients: [],
+    exercises: [],
+    workouts: [],
+    settings: { theme: 'light' }
+  },
+
+  init() {
+    const saved = Storage.load();
+    if (saved) {
+      this.data = { ...this.data, ...saved };
+    } else {
+      // Первый запуск — загружаем стартовые упражнения
+      this.data.exercises = SEED_EXERCISES;
+      this.save();
+    }
+  },
+
+  save() {
+    Storage.save(this.data);
+  }
+};
+
+/* ==================== БАЗА УПРАЖНЕНИЙ ==================== */
+const SEED_EXERCISES = [
+  {
+    id: 'ex1',
+    name: 'Ягодичный мост в тренажёре',
+    muscles: 'Ягодицы, бицепс бедра, поясница',
+    photo: 'https://images.pexels.com/photos/6456303/pexels-photo-6456303.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: спина прижата к валику, стопы на платформе\n   ↓\nтолкаем таз вверх\n   ↓\nтаз вверху, ягодицы сжаты',
+    technique: [
+      'Сядьте в тренажёр, валик — на бёдрах (у таза)',
+      'Стопы на ширине плеч, носки чуть наружу',
+      'Спина прижата к спинке, взгляд вперёд',
+      'Толкайте таз вверх за счёт ягодиц',
+      'В верхней точке задержитесь на 1 сек, сожмите ягодицы',
+      'Плавно опуститесь, не бросая вес'
+    ],
+    mistakes: ['Прогиб в пояснице вверху', 'Толчок ногами вместо ягодиц', 'Неполная амплитуда'],
+    tip: 'В верхней точке колени — 90°, не разгибайте полностью.'
+  },
+  {
+    id: 'ex2',
+    name: 'Тяга вертикального блока (Hammer)',
+    muscles: 'Широчайшие, верх спины, бицепс',
+    photo: 'https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: сидя, рукоять сверху\n   ↓\nтянем к груди\n   ↓\nлокти вниз, лопатки сведены',
+    technique: [
+      'Сядьте, зафиксируйте бёдра под валиками',
+      'Хват чуть шире плеч, корпус слегка назад',
+      'Тяните рукоять к верху груди',
+      'Сведите лопатки, локти идут вниз',
+      'Плавно верните рукоять вверх'
+    ],
+    mistakes: ['Раскачивание корпусом', 'Тяга за голову', 'Рывки'],
+    tip: 'Думайте «тянуть локтями», а не руками.'
+  },
+  {
+    id: 'ex3',
+    name: 'Сгибания на бицепс бедра',
+    muscles: 'Бицепс бедра',
+    photo: 'https://images.pexels.com/photos/4498482/pexels-photo-4498482.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: лёжа/сидя, валик на голенях\n   ↓\nсгибаем ноги\n   ↓\nпятки к ягодицам',
+    technique: [
+      'Отрегулируйте валик под голеностоп',
+      'Колени — на краю скамьи',
+      'Сгибайте ноги плавно, без рывка',
+      'В пике — пауза 1 сек',
+      'Медленно разогните (негатив 2-3 сек)'
+    ],
+    mistakes: ['Отрыв таза', 'Рывки', 'Помощь корпусом'],
+    tip: 'Медленный негатив = рост мышц.'
+  },
+  {
+    id: 'ex4',
+    name: 'Отведения гантелей в стороны',
+    muscles: 'Средние дельты',
+    photo: 'https://images.pexels.com/photos/4162493/pexels-photo-4162493.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: руки вниз с гантелями\n   ↓\nразводим в стороны\n   ↓\nруки на уровне плеч',
+    technique: [
+      'Стоя, гантели в опущенных руках',
+      'Лёгкий наклон вперёд, локти чуть согнуты',
+      'Разводите руки через стороны до уровня плеч',
+      'Мизинец чуть выше большого пальца',
+      'Плавно опустите'
+    ],
+    mistakes: ['Раскачивание', 'Подъём выше плеч', 'Рывки', 'Большие веса'],
+    tip: 'Вес небольшой, работайте на технику.'
+  },
+  {
+    id: 'ex5',
+    name: 'Приседания с гантелью (гоблет)',
+    muscles: 'Квадрицепсы, ягодицы',
+    photo: 'https://images.pexels.com/photos/6456303/pexels-photo-6456303.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: гантель у груди, стопы на ширине плеч\n   ↓\nприседаем\n   ↓\nбёдра параллельны полу',
+    technique: [
+      'Держите гантель вертикально у груди обеими руками',
+      'Стопы на ширине плеч, носки чуть наружу',
+      'Приседайте, отводя таз назад',
+      'Спина прямая, грудь вперёд',
+      'Опуститесь до параллели бёдер',
+      'Встаньте через пятки'
+    ],
+    mistakes: ['Круглая спина', 'Колени внутрь', 'Отрыв пяток'],
+    tip: 'Колени идут в сторону носков, не внутрь.'
+  },
+  {
+    id: 'ex6',
+    name: 'Выпады в Смите',
+    muscles: 'Квадрицепсы, ягодицы, баланс',
+    photo: 'https://images.pexels.com/photos/6456303/pexels-photo-6456303.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: штанга на плечах, шаг вперёд\n   ↓\nопускаемся\n   ↓\nоба колена ~90°',
+    technique: [
+      'Штанга на трапециях, шаг вперёд',
+      'Опускайтесь, пока оба колена не ~90°',
+      'Переднее колено — над стопой',
+      'Заднее колено — почти касается пола',
+      'Оттолкнитесь передней ногой, вернитесь'
+    ],
+    mistakes: ['Колено за носком', 'Наклон корпуса', 'Потеря равновесия'],
+    tip: 'Сначала все подходы на одну ногу, потом на другую.'
+  },
+  {
+    id: 'ex7',
+    name: 'Тяга горизонтального блока (Hammer)',
+    muscles: 'Широчайшие, середина спины',
+    photo: 'https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: сидя, рукоять к животу\n   ↓\nтянем\n   ↓\nлокти назад, лопатки сведены',
+    technique: [
+      'Сядьте, стопы на упорах, колени чуть согнуты',
+      'Возьмите рукоять, спина прямая',
+      'Тяните к низу живота',
+      'Сведите лопатки, локти вдоль корпуса',
+      'Плавно верните'
+    ],
+    mistakes: ['Круглая спина', 'Рывки', 'Тяга руками'],
+    tip: 'Корпус неподвижен, работает только спина.'
+  },
+  {
+    id: 'ex8',
+    name: 'Отведение бедра сидя',
+    muscles: 'Средняя ягодичная, отводящие бедра',
+    photo: 'https://images.pexels.com/photos/4498482/pexels-photo-4498482.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: сидя, ноги вместе\n   ↓\nразводим колени\n   ↓\nмаксимально в стороны',
+    technique: [
+      'Сядьте, спина прижата',
+      'Ноги на упорах, колени вместе',
+      'Разводите ноги плавно в стороны',
+      'В крайней точке — пауза 1 сек',
+      'Медленно сведите'
+    ],
+    mistakes: ['Рывки', 'Отрыв таза', 'Помощь корпусом'],
+    tip: 'Медленное возвращение усиливает эффект.'
+  },
+  {
+    id: 'ex9',
+    name: 'Румынская тяга',
+    muscles: 'Бицепс бедра, ягодицы, поясница',
+    photo: 'https://images.pexels.com/photos/6456303/pexels-photo-6456303.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: штанга в руках, ноги чуть согнуты\n   ↓\nнаклон с прямой спиной\n   ↓\nштанга у голеней',
+    technique: [
+      'Штанга в опущенных руках, хват на ширине плеч',
+      'Колени чуть согнуты, зафиксированы',
+      'Наклоняйтесь, отводя таз назад',
+      'Спина прямая, штанга скользит по ногам',
+      'Опуститесь до растяжения бицепса бедра',
+      'Вернитесь за счёт ягодиц'
+    ],
+    mistakes: ['Круглая спина', 'Сгибание коленей', 'Штанга далеко от тела'],
+    tip: 'Движение — в тазобедренном суставе, а не в коленях.'
+  },
+  {
+    id: 'ex10',
+    name: 'Жим гантелей сидя',
+    muscles: 'Плечи, трицепс, верх груди',
+    photo: 'https://images.pexels.com/photos/4162493/pexels-photo-4162493.jpeg?auto=compress&cs=tinysrgb&w=600',
+    schema: 'И.П.: сидя, гантели у плеч\n   ↓\nвыжимаем вверх\n   ↓\nруки выпрямлены',
+    technique: [
+      'Сядьте, спина прижата к спинке',
+      'Гантели на уровне плеч, ладони вперёд',
+      'Выжимайте вверх, чуть сводя руки',
+      'Вверху не блокируйте локти жёстко',
+      'Плавно опустите к плечам'
+    ],
+    mistakes: ['Прогиб в пояснице', 'Разведение локтей в стороны', 'Рывки'],
+    tip: 'Локти идут чуть вперёд, не строго в стороны.'
+  }
+];
+
+/* ==================== УТИЛИТЫ ==================== */
+const Utils = {
+  uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  },
+
+  escape(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  },
+
+  formatDate(iso) {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  }
+};
+
+/* ==================== TOAST ==================== */
+const Toast = {
+  timer: null,
+  show(msg, duration = 2200) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => el.classList.add('hidden'), duration);
+  }
+};
+
+/* ==================== МОДАЛКА ==================== */
+const Modal = {
+  open({ title, body, footer }) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = body;
+    document.getElementById('modalFooter').innerHTML = footer || '';
+    document.getElementById('modal').classList.remove('hidden');
+  },
+
+  close() {
+    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modalBody').innerHTML = '';
+    document.getElementById('modalFooter').innerHTML = '';
+  },
+
+  confirm(message, onConfirm) {
+    this.open({
+      title: 'Подтверждение',
+      body: `<p style="font-size:15px;">${Utils.escape(message)}</p>`,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close()">Отмена</button>
+        <button class="btn-danger" id="modalConfirmBtn">Удалить</button>
+      `
+    });
+    setTimeout(() => {
+      const btn = document.getElementById('modalConfirmBtn');
+      if (btn) btn.onclick = () => { Modal.close(); onConfirm(); };
+    }, 0);
+  }
+};
+
+/* ==================== БИБЛИОТЕКА УПРАЖНЕНИЙ ==================== */
+const Library = {
+  searchQuery: '',
+
+  render() {
+    const container = document.getElementById('libraryList');
+    const q = this.searchQuery.trim().toLowerCase();
+
+    let list = State.data.exercises;
+    if (q) {
+      list = list.filter(ex =>
+        ex.name.toLowerCase().includes(q) ||
+        (ex.muscles || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (!list.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="emoji">📚</span>
+          ${q ? 'Ничего не найдено' : 'Упражнений пока нет.<br>Добавьте первое!'}
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = list.map(ex => `
+      <div class="list-item" onclick="Library.openDetail('${ex.id}')">
+        ${ex.photo
+          ? `<img class="list-item-thumb" src="${Utils.escape(ex.photo)}" alt="" onerror="this.style.display='none'">`
+          : `<div class="list-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">💪</div>`
+        }
+        <div class="list-item-info">
+          <div class="list-item-title">${Utils.escape(ex.name)}</div>
+          <div class="list-item-sub">${Utils.escape(ex.muscles || '')}</div>
+        </div>
+        <div class="list-item-actions" onclick="event.stopPropagation()">
+          <button class="icon-btn" onclick="Library.openForm('${ex.id}')">✏️</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  openDetail(id) {
+    const ex = State.data.exercises.find(e => e.id === id);
+    if (!ex) return;
+
+    const photoHtml = ex.photo
+      ? `<div style="text-align:center;margin-bottom:16px;">
+           <img src="${Utils.escape(ex.photo)}" alt=""
+                style="max-width:100%;max-height:260px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.15);"
+                onerror="this.style.display='none'">
+         </div>`
+      : '';
+
+    const schemaHtml = ex.schema
+      ? `<div style="background:var(--bg-input);border-radius:8px;padding:12px;margin:12px 0;font-family:monospace;font-size:13px;white-space:pre-line;">${Utils.escape(ex.schema)}</div>`
+      : '';
+
+    const techHtml = (ex.technique || []).length
+      ? `<h3 style="margin-top:16px;">✅ Техника</h3>
+         <ol style="padding-left:22px;font-size:14px;">
+           ${ex.technique.map(t => `<li style="margin-bottom:6px;">${Utils.escape(t)}</li>`).join('')}
+         </ol>`
+      : '';
+
+    const mistakesHtml = (ex.mistakes || []).length
+      ? `<h3 style="margin-top:16px;">⚠️ Ошибки</h3>
+         <ul style="padding-left:22px;font-size:14px;color:var(--danger);">
+           ${ex.mistakes.map(m => `<li style="margin-bottom:4px;">${Utils.escape(m)}</li>`).join('')}
+         </ul>`
+      : '';
+
+    const tipHtml = ex.tip
+      ? `<div style="background:var(--success-bg);padding:10px 14px;border-radius:8px;margin-top:14px;font-size:14px;">
+           💡 <b>Совет:</b> ${Utils.escape(ex.tip)}
+         </div>`
+      : '';
+
+    Modal.open({
+      title: ex.name,
+      body: `
+        <div class="badge badge-accent">${Utils.escape(ex.muscles || '')}</div>
+        ${photoHtml}
+        ${schemaHtml}
+        ${techHtml}
+        ${mistakesHtml}
+        ${tipHtml}
+      `,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close()">Закрыть</button>
+        <button class="btn-primary" onclick="Library.openForm('${ex.id}')">✏️ Изменить</button>
+      `
+    });
+  },
+
+  openForm(id) {
+    const isEdit = !!id;
+    const ex = isEdit
+      ? State.data.exercises.find(e => e.id === id)
+      : { name: '', muscles: '', photo: '', schema: '', technique: [], mistakes: [], tip: '' };
+
+    if (!ex) return;
+
+    Modal.open({
+      title: isEdit ? 'Редактировать упражнение' : 'Новое упражнение',
+      body: `
+        <div class="form-group">
+          <label>Название *</label>
+          <input id="exName" value="${Utils.escape(ex.name)}" placeholder="Например: Жим лёжа">
+        </div>
+        <div class="form-group">
+          <label>Мышцы</label>
+          <input id="exMuscles" value="${Utils.escape(ex.muscles)}" placeholder="Грудь, трицепс, плечи">
+        </div>
+        <div class="form-group">
+          <label>Фото (ссылка)</label>
+          <input id="exPhoto" value="${Utils.escape(ex.photo)}" placeholder="https://...">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+            Вставьте ссылку на картинку (можно из Google Картинок → «Копировать адрес изображения»)
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Схема (каждая строка — новый этап)</label>
+          <textarea id="exSchema" placeholder="И.П.: ...&#10; ↓&#10;движение&#10; ↓&#10;финиш">${Utils.escape(ex.schema)}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Техника (каждый пункт с новой строки)</label>
+          <textarea id="exTechnique" placeholder="Шаг 1&#10;Шаг 2&#10;Шаг 3">${Utils.escape((ex.technique || []).join('\n'))}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Ошибки (каждая с новой строки)</label>
+          <textarea id="exMistakes" placeholder="Ошибка 1&#10;Ошибка 2">${Utils.escape((ex.mistakes || []).join('\n'))}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Совет</label>
+          <input id="exTip" value="${Utils.escape(ex.tip || '')}" placeholder="Полезный совет">
+        </div>
+      `,
+      footer: `
+        ${isEdit ? `<button class="btn-danger" onclick="Library.delete('${id}')">🗑</button>` : ''}
+        <button class="btn-secondary" onclick="Modal.close()">Отмена</button>
+        <button class="btn-primary" onclick="Library.save('${id || ''}')">Сохранить</button>
+      `
+    });
+  },
+
+  save(id) {
+    const name = document.getElementById('exName').value.trim();
+    if (!name) { Toast.show('⚠️ Введите название'); return; }
+
+    const data = {
+      name,
+      muscles: document.getElementById('exMuscles').value.trim(),
+      photo: document.getElementById('exPhoto').value.trim(),
+      schema: document.getElementById('exSchema').value,
+      technique: document.getElementById('exTechnique').value
+        .split('\n').map(s => s.trim()).filter(Boolean),
+      mistakes: document.getElementById('exMistakes').value
+        .split('\n').map(s => s.trim()).filter(Boolean),
+      tip: document.getElementById('exTip').value.trim()
+    };
+
+    if (id) {
+      const idx = State.data.exercises.findIndex(e => e.id === id);
+      if (idx !== -1) State.data.exercises[idx] = { ...State.data.exercises[idx], ...data };
+      Toast.show('✅ Обновлено');
+    } else {
+      State.data.exercises.push({ id: Utils.uid(), ...data });
+      Toast.show('✅ Добавлено');
+    }
+
+    State.save();
+    Modal.close();
+    this.render();
+    App.updateStats();
+  },
+
+  delete(id) {
+    Modal.confirm('Удалить это упражнение?', () => {
+      State.data.exercises = State.data.exercises.filter(e => e.id !== id);
+      State.save();
+      Modal.close();
+      this.render();
+      App.updateStats();
+      Toast.show('🗑 Удалено');
+    });
+  }
+};
+
+/* ==================== APP (НАВИГАЦИЯ + ТЕМА) ==================== */
+const App = {
+  currentTab: 'dashboard',
+
+  init() {
+    State.init();
+    this.applyTheme();
+    this.bindNav();
+    this.bindTheme();
+    this.bindLibrary();
+    this.goTo('dashboard');
+    this.updateStats();
+  },
+
+  goTo(tab) {
+    this.currentTab = tab;
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+    const tabEl = document.getElementById('tab-' + tab);
+    if (tabEl) tabEl.classList.add('active');
+
+    document.querySelectorAll(`.nav-btn[data-tab="${tab}"]`).forEach(el => el.classList.add('active'));
+
+    if (tab === 'library') Library.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  bindNav() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.goTo(btn.dataset.tab));
+    });
+  },
+
+  bindTheme() {
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const newTheme = State.data.settings.theme === 'dark' ? 'light' : 'dark';
+      State.data.settings.theme = newTheme;
+      State.save();
+      this.applyTheme();
+    });
+  },
+
+  applyTheme() {
+    const theme = State.data.settings.theme || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  },
+
+  bindLibrary() {
+    const search = document.getElementById('librarySearch');
+    search.addEventListener('input', (e) => {
+      Library.searchQuery = e.target.value;
+      Library.render();
+    });
+
+    document.getElementById('addExerciseBtn').addEventListener('click', () => {
+      Library.openForm();
+    });
+  },
+
+  updateStats() {
+    document.getElementById('statClients').textContent = State.data.clients.length;
+    document.getElementById('statExercises').textContent = State.data.exercises.length;
+    document.getElementById('statWorkouts').textContent = State.data.workouts.length;
+  }
+};
+
+/* ==================== ЗАПУСК ==================== */
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Закрытие модалки по крестику
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'modalClose') Modal.close();
+});
+/* ============================================================
+   ЧАСТЬ 3: КЛИЕНТЫ И ПРОГРАММЫ ТРЕНИРОВОК
+   ============================================================ */
+
+/* ==================== КЛИЕНТЫ ==================== */
+const Clients = {
+
+  render() {
+    const container = document.getElementById('clientsList');
+    const list = State.data.clients;
+
+    if (!list.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="emoji">👥</span>
+          Клиентов пока нет.<br>Нажмите «+ Добавить».
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = list.map(c => {
+      const programCount = (c.program || []).length;
+      return `
+        <div class="list-item" onclick="Clients.openDetail('${c.id}')">
+          <div class="list-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--accent);color:#fff;">
+            ${Utils.escape((c.name || '?').charAt(0).toUpperCase())}
+          </div>
+          <div class="list-item-info">
+            <div class="list-item-title">${Utils.escape(c.name)}</div>
+            <div class="list-item-sub">
+              ${c.goal ? Utils.escape(c.goal) + ' • ' : ''}${programCount} ${this.plural(programCount, 'упражнение', 'упражнения', 'упражнений')}
+            </div>
+          </div>
+          <div class="list-item-actions" onclick="event.stopPropagation()">
+            <button class="icon-btn" onclick="Clients.openForm('${c.id}')">✏️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  plural(n, one, few, many) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+  },
+
+  openDetail(id) {
+    const c = State.data.clients.find(x => x.id === id);
+    if (!c) return;
+
+    const programHtml = (c.program || []).length
+      ? (c.program || []).map((block, i) => this.blockPreview(block, i)).join('')
+      : `<div class="empty-state" style="padding:30px 10px;">
+           <span class="emoji">📋</span>
+           Программа пуста.<br>Добавьте упражнения!
+         </div>`;
+
+    Modal.open({
+      title: c.name,
+      body: `
+        ${c.goal ? `<div class="badge badge-accent">🎯 ${Utils.escape(c.goal)}</div>` : ''}
+        ${c.notes ? `<div style="background:var(--bg-input);padding:10px 14px;border-radius:8px;margin:10px 0;font-size:13px;">${Utils.escape(c.notes)}</div>` : ''}
+
+        <h3 style="margin-top:16px;">📋 Программа тренировок</h3>
+        <div id="clientProgramPreview">${programHtml}</div>
+
+        <button class="btn-ghost btn-block" style="margin-top:14px;" onclick="Clients.openProgramEditor('${c.id}')">
+          ✏️ Редактировать программу
+        </button>
+      `,
+      footer: `
+        <button class="btn-danger" onclick="Clients.delete('${c.id}')">🗑</button>
+        <button class="btn-secondary" onclick="Clients.openForm('${c.id}')">✏️ Профиль</button>
+        <button class="btn-primary" onclick="Modal.close(); Workout.start('${c.id}')">🏋️ Начать тренировку</button>
+      `
+    });
+  },
+
+  blockPreview(block, idx) {
+    if (block.type === 'single') {
+      const ex = State.data.exercises.find(e => e.id === block.exerciseId);
+      if (!ex) return '';
+      return `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+          <div style="font-weight:600;font-size:14px;">${idx + 1}. ${Utils.escape(ex.name)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+            ${block.sets} × ${Utils.escape(block.reps)} • отдых ${block.rest} сек
+          </div>
+        </div>
+      `;
+    }
+    // superset
+    const a = State.data.exercises.find(e => e.id === block.exA);
+    const b = State.data.exercises.find(e => e.id === block.exB);
+    return `
+      <div style="background:var(--bg-card);border:2px dashed var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="font-weight:700;color:var(--accent);font-size:13px;margin-bottom:8px;">${idx + 1}. СУПЕРСЕТ</div>
+        <div style="font-size:13px;margin-bottom:4px;">🅰️ ${a ? Utils.escape(a.name) : '—'}</div>
+        <div style="font-size:13px;margin-bottom:8px;">🅱️ ${b ? Utils.escape(b.name) : '—'}</div>
+        <div style="font-size:12px;color:var(--text-muted);">
+          ${block.sets} × ${Utils.escape(block.reps)} • отдых ${block.rest} сек (после А+Б)
+        </div>
+      </div>
+    `;
+  },
+
+  openForm(id) {
+    const isEdit = !!id;
+    const c = isEdit
+      ? State.data.clients.find(x => x.id === id)
+      : { name: '', goal: '', notes: '', program: [] };
+
+    if (!c) return;
+
+    Modal.open({
+      title: isEdit ? 'Профиль клиента' : 'Новый клиент',
+      body: `
+        <div class="form-group">
+          <label>Имя *</label>
+          <input id="clName" value="${Utils.escape(c.name)}" placeholder="Иван Петров">
+        </div>
+        <div class="form-group">
+          <label>Цель тренировок</label>
+          <input id="clGoal" value="${Utils.escape(c.goal || '')}" placeholder="Похудение / масса / сила">
+        </div>
+        <div class="form-group">
+          <label>Заметки</label>
+          <textarea id="clNotes" placeholder="Травмы, ограничения, пожелания...">${Utils.escape(c.notes || '')}</textarea>
+        </div>
+      `,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close()">Отмена</button>
+        <button class="btn-primary" onclick="Clients.save('${id || ''}')">Сохранить</button>
+      `
+    });
+  },
+
+  save(id) {
+    const name = document.getElementById('clName').value.trim();
+    if (!name) { Toast.show('⚠️ Введите имя'); return; }
+
+    const data = {
+      name,
+      goal: document.getElementById('clGoal').value.trim(),
+      notes: document.getElementById('clNotes').value.trim()
+    };
+
+    if (id) {
+      const idx = State.data.clients.findIndex(c => c.id === id);
+      if (idx !== -1) State.data.clients[idx] = { ...State.data.clients[idx], ...data };
+      Toast.show('✅ Обновлено');
+    } else {
+      State.data.clients.push({
+        id: Utils.uid(),
+        ...data,
+        program: [],
+        createdAt: new Date().toISOString()
+      });
+      Toast.show('✅ Клиент добавлен');
+    }
+
+    State.save();
+    Modal.close();
+    this.render();
+    App.updateStats();
+  },
+
+  delete(id) {
+    Modal.confirm('Удалить клиента и всю его программу?', () => {
+      State.data.clients = State.data.clients.filter(c => c.id !== id);
+      State.save();
+      Modal.close();
+      this.render();
+      App.updateStats();
+      Toast.show('🗑 Удалено');
+    });
+  },
+
+  /* ==================== РЕДАКТОР ПРОГРАММЫ ==================== */
+  openProgramEditor(clientId) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return;
+
+    if (!c.program) c.program = [];
+
+    const programHtml = c.program.length
+      ? c.program.map((block, i) => this.programBlockEditor(block, i, clientId)).join('')
+      : `<p style="color:var(--text-muted);text-align:center;padding:20px 0;font-size:14px;">
+           Программа пуста. Добавьте упражнение или суперсет.
+         </p>`;
+
+    Modal.open({
+      title: 'Редактирование программы',
+      body: `
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+          Порядок сверху вниз — порядок выполнения на тренировке.
+        </p>
+        <div id="programBlocks">${programHtml}</div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn-ghost" style="flex:1;" onclick="Clients.addProgramBlock('${clientId}', 'single')">+ Упражнение</button>
+          <button class="btn-ghost" style="flex:1;" onclick="Clients.addProgramBlock('${clientId}', 'superset')">+ Суперсет</button>
+        </div>
+      `,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close(); Clients.openDetail('${clientId}')">Назад</button>
+        <button class="btn-primary" onclick="Clients.saveProgram('${clientId}')">💾 Сохранить</button>
+      `
+    });
+  },
+
+  programBlockEditor(block, idx, clientId) {
+    const exercises = State.data.exercises;
+    const options = exercises.map(e =>
+      `<option value="${e.id}">${Utils.escape(e.name)}</option>`
+    ).join('');
+
+    if (block.type === 'single') {
+      return `
+        <div style="background:var(--bg-input);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:13px;">${idx + 1}. Упражнение</div>
+            <button class="icon-btn" onclick="Clients.removeBlock('${clientId}', ${idx})">🗑</button>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <select data-field="exerciseId" data-idx="${idx}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'exerciseId', this.value)">
+              <option value="">— выберите —</option>
+              ${exercises.map(e => `<option value="${e.id}" ${e.id === block.exerciseId ? 'selected' : ''}>${Utils.escape(e.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:11px;">Подходы</label>
+              <input type="number" min="1" value="${block.sets || 3}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'sets', this.value)">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:11px;">Повторы</label>
+              <input value="${Utils.escape(block.reps || '12-15')}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'reps', this.value)">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:11px;">Отдых (сек)</label>
+              <input type="number" min="0" value="${block.rest || 90}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'rest', this.value)">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // superset
+    return `
+      <div style="background:var(--bg-input);border:2px dashed var(--accent);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:13px;color:var(--accent);">${idx + 1}. СУПЕРСЕТ</div>
+          <button class="icon-btn" onclick="Clients.removeBlock('${clientId}', ${idx})">🗑</button>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:11px;">🅰️ Первое</label>
+          <select onchange="Clients.updateBlock('${clientId}', ${idx}, 'exA', this.value)">
+            <option value="">— выберите —</option>
+            ${exercises.map(e => `<option value="${e.id}" ${e.id === block.exA ? 'selected' : ''}>${Utils.escape(e.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label style="font-size:11px;">🅱️ Второе</label>
+          <select onchange="Clients.updateBlock('${clientId}', ${idx}, 'exB', this.value)">
+            <option value="">— выберите —</option>
+            ${exercises.map(e => `<option value="${e.id}" ${e.id === block.exB ? 'selected' : ''}>${Utils.escape(e.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Подходы</label>
+            <input type="number" min="1" value="${block.sets || 3}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'sets', this.value)">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Повторы</label>
+            <input value="${Utils.escape(block.reps || '12-15')}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'reps', this.value)">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:11px;">Отдых (сек)</label>
+            <input type="number" min="0" value="${block.rest || 90}" onchange="Clients.updateBlock('${clientId}', ${idx}, 'rest', this.value)">
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  addProgramBlock(clientId, type) {
+    // Сохраняем текущее состояние программы
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return;
+
+    const newBlock = type === 'single'
+      ? { type: 'single', exerciseId: '', sets: 3, reps: '12-15', rest: 90 }
+      : { type: 'superset', exA: '', exB: '', sets: 3, reps: '12-15', rest: 90 };
+
+    c.program.push(newBlock);
+    State.save();
+
+    // Перерисовать редактор
+    this.openProgramEditor(clientId);
+  },
+
+  updateBlock(clientId, idx, field, value) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c || !c.program[idx]) return;
+    c.program[idx][field] = field === 'sets' || field === 'rest' ? Number(value) : value;
+    State.save();
+  },
+
+  removeBlock(clientId, idx) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return;
+    c.program.splice(idx, 1);
+    State.save();
+    this.openProgramEditor(clientId);
+  },
+
+  saveProgram(clientId) {
+    State.save();
+    Modal.close();
+    Toast.show('✅ Программа сохранена');
+    this.openDetail(clientId);
+  }
+};
+
+/* ==================== ПРИВЯЗКА В APP ==================== */
+const _originalAppInit = App.init;
+App.init = function() {
+  _originalAppInit.call(this);
+
+  // Кнопка «+ Добавить» клиента
+  document.getElementById('addClientBtn').addEventListener('click', () => {
+    Clients.openForm();
+  });
+
+  // Первая отрисовка клиентов
+  Clients.render();
+};
+
+// Переопределяем goTo, чтобы рендерить клиентов при переходе
+const _originalGoTo = App.goTo;
+App.goTo = function(tab) {
+  _originalGoTo.call(this, tab);
+  if (tab === 'clients') Clients.render();
+};
+/* ============================================================
+   ЧАСТЬ 4: ТРЕНИРОВКА, ТАЙМЕР, ИСТОРИЯ, ЭКСПОРТ
+   ============================================================ */
+
+/* ==================== РЕЖИМ ТРЕНИРОВКИ ==================== */
+const Workout = {
+  active: null,        // { clientId, clientName, programIndex, blocks: [...] }
+  currentBlock: 0,
+  currentSet: 0,
+  currentPhase: 'A',   // для суперсета: 'A' или 'B'
+  restTimer: null,
+  restSeconds: 0,
+
+  start(clientId) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) { Toast.show('⚠️ Клиент не найден'); return; }
+    if (!c.program || !c.program.length) {
+      Toast.show('⚠️ Сначала добавьте упражнения в программу');
+      return;
+    }
+
+    // Формируем «плоский» список шагов для выполнения
+    const steps = [];
+    c.program.forEach((block, blockIdx) => {
+      if (block.type === 'single') {
+        if (!block.exerciseId) return;
+        const ex = State.data.exercises.find(e => e.id === block.exerciseId);
+        if (!ex) return;
+        steps.push({
+          blockIdx,
+          kind: 'single',
+          block,
+          ex,
+          sets: block.sets || 3,
+          reps: block.reps || '12-15',
+          rest: block.rest || 90
+        });
+      } else {
+        const a = State.data.exercises.find(e => e.id === block.exA);
+        const b = State.data.exercises.find(e => e.id === block.exB);
+        if (!a || !b) return;
+        steps.push({
+          blockIdx,
+          kind: 'superset',
+          block,
+          exA: a,
+          exB: b,
+          sets: block.sets || 3,
+          reps: block.reps || '12-15',
+          rest: block.rest || 90
+        });
+      }
+    });
+
+    if (!steps.length) {
+      Toast.show('⚠️ В программе нет валидных упражнений');
+      return;
+    }
+
+    // Создаём структуру результатов
+    const results = steps.map(step => ({
+      name: step.kind === 'single' ? step.ex.name : `${step.exA.name} + ${step.exB.name}`,
+      kind: step.kind,
+      sets: [],
+      exA: step.kind === 'superset' ? step.exA.name : null,
+      exB: step.kind === 'superset' ? step.exB.name : null,
+      repsTarget: step.reps,
+      restTarget: step.rest,
+      totalSets: step.sets
+    }));
+
+    this.active = {
+      clientId,
+      clientName: c.name,
+      steps,
+      results,
+      startedAt: new Date().toISOString()
+    };
+    this.currentBlock = 0;
+    this.currentSet = 0;
+    this.currentPhase = 'A';
+
+    this.render();
+  },
+
+  render() {
+    if (!this.active) return;
+
+    const steps = this.active.steps;
+    const step = steps[this.currentBlock];
+    const setNum = this.currentSet + 1;
+    const totalSets = step.sets;
+
+    // Определяем, какое упражнение сейчас
+    let currentExName = '';
+    if (step.kind === 'single') {
+      currentExName = step.ex.name;
+    } else {
+      currentExName = this.currentPhase === 'A'
+        ? `🅰️ ${step.exA.name}`
+        : `🅱️ ${step.exB.name}`;
+    }
+
+    // Прогресс
+    const totalSteps = steps.length;
+    const progressPct = Math.round(((this.currentBlock) / totalSteps) * 100);
+
+    // Форма ввода для подхода
+    const setInputHtml = `
+      <div style="background:var(--bg-input);border-radius:12px;padding:14px;margin-top:14px;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">
+          Подход ${setNum} из ${totalSets} • цель: ${step.reps}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:12px;">Вес (кг)</label>
+            <input type="number" inputmode="decimal" step="0.5" min="0" id="inpWeight" placeholder="0" style="font-size:16px;">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:12px;">Повторы (факт)</label>
+            <input type="number" inputmode="numeric" min="0" id="inpReps" placeholder="12" style="font-size:16px;">
+          </div>
+        </div>
+      </div>
+    `;
+
+    Modal.open({
+      title: `🏋️ ${this.active.clientName}`,
+      body: `
+        <div style="margin-bottom:14px;">
+          <div style="background:var(--border);height:6px;border-radius:3px;overflow:hidden;">
+            <div style="background:var(--accent);height:100%;width:${progressPct}%;transition:width 0.3s;"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;">
+            Упражнение ${this.currentBlock + 1} из ${totalSteps}
+          </div>
+        </div>
+
+        <h2 style="font-size:18px;margin-bottom:6px;">${Utils.escape(currentExName)}</h2>
+        ${step.kind === 'superset' ? `
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+            Суперсет — выполняем А и Б подряд
+          </div>
+        ` : ''}
+
+        ${setInputHtml}
+
+        <div id="restZone"></div>
+      `,
+      footer: `
+        <button class="btn-danger" onclick="Workout.confirmStop()">Стоп</button>
+        <button class="btn-primary" style="flex:2;" onclick="Workout.completeSet()">
+          ${this.currentPhase === 'A' && step.kind === 'superset' ? '➡️ Далее к Б' : '✅ Выполнено'}
+        </button>
+      `
+    });
+
+    // Фокус на вес
+    setTimeout(() => {
+      const w = document.getElementById('inpWeight');
+      if (w) w.focus();
+    }, 200);
+  },
+
+  completeSet() {
+    if (!this.active) return;
+    const step = this.active.steps[this.currentBlock];
+    const result = this.active.results[this.currentBlock];
+    const wEl = document.getElementById('inpWeight');
+    const rEl = document.getElementById('inpReps');
+
+    const weight = wEl && wEl.value ? parseFloat(wEl.value) : null;
+    const reps = rEl && rEl.value ? parseInt(rEl.value) : null;
+
+    const setData = {
+      weight,
+      reps,
+      phase: step.kind === 'superset' ? this.currentPhase : null,
+      ts: new Date().toISOString()
+    };
+
+    result.sets.push(setData);
+
+    // Логика перехода
+    if (step.kind === 'single') {
+      // одиночное: следующий подход или следующее упражнение
+      if (this.currentSet + 1 < step.sets) {
+        this.currentSet++;
+        this.startRest(step.rest);
+      } else {
+        this.nextExercise();
+      }
+    } else {
+      // суперсет
+      if (this.currentPhase === 'A') {
+        // закончили А → сразу к Б без отдыха
+        this.currentPhase = 'B';
+        Toast.show('➡️ Теперь Б');
+        this.render();
+      } else {
+        // закончили Б → отдых, потом следующий подход (или следующее упражнение)
+        if (this.currentSet + 1 < step.sets) {
+          this.currentSet++;
+          this.currentPhase = 'A';
+          this.startRest(step.rest);
+        } else {
+          this.nextExercise();
+        }
+      }
+    }
+  },
+
+  nextExercise() {
+    if (this.currentBlock + 1 < this.active.steps.length) {
+      // Отдых перед следующим упражнением
+      const step = this.active.steps[this.currentBlock];
+      this.startRest(step.rest, () => {
+        this.currentBlock++;
+        this.currentSet = 0;
+        this.currentPhase = 'A';
+        this.render();
+      });
+    } else {
+      // Тренировка завершена
+      this.finish();
+    }
+  },
+
+  startRest(seconds, callback) {
+    this.restSeconds = seconds;
+    this.restCallback = callback || null;
+
+    // Обновляем тело модалки — показываем таймер
+    const restZone = document.getElementById('restZone');
+    if (!restZone) return;
+
+    const renderTimer = () => {
+      if (!restZone) return;
+      restZone.innerHTML = `
+        <div style="text-align:center;margin-top:20px;padding:20px;background:var(--success-bg);border-radius:12px;">
+          <div style="font-size:13px;color:var(--success);margin-bottom:6px;">⏱ Отдых</div>
+          <div style="font-size:36px;font-weight:700;color:var(--success);" id="restTime">
+            ${this.restSeconds}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">секунд</div>
+        </div>
+      `;
+    };
+
+    renderTimer();
+    // Меняем футер
+    const footer = document.getElementById('modalFooter');
+    if (footer) {
+      footer.innerHTML = `
+        <button class="btn-danger" onclick="Workout.confirmStop()">Стоп</button>
+        <button class="btn-primary" style="flex:2;" onclick="Workout.skipRest()">⏭ Пропустить отдых</button>
+      `;
+    }
+
+    clearInterval(this.restTimer);
+    this.restTimer = setInterval(() => {
+      this.restSeconds--;
+      const el = document.getElementById('restTime');
+      if (el) el.textContent = this.restSeconds;
+
+      if (this.restSeconds <= 0) {
+        clearInterval(this.restTimer);
+        this.restTimer = null;
+        this.endRest();
+      } else if (this.restSeconds <= 3) {
+        // Бип на последних секундах
+        this.beep();
+      }
+    }, 1000);
+  },
+
+  skipRest() {
+    clearInterval(this.restTimer);
+    this.restTimer = null;
+    this.endRest();
+  },
+
+  endRest() {
+    this.beep();
+
+    if (this.restCallback) {
+      const cb = this.restCallback;
+      this.restCallback = null;
+      cb();
+    } else {
+      // Если отдых был между подходами того же упражнения
+      this.render();
+    }
+  },
+
+  beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.value = 0.15;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (e) { /* нет звука — не критично */ }
+  },
+
+  confirmStop() {
+    Modal.confirm('Завершить тренировку? Результаты будут сохранены.', () => {
+      this.finish(true);
+    });
+  },
+
+  finish(early = false) {
+    if (this.restTimer) {
+      clearInterval(this.restTimer);
+      this.restTimer = null;
+    }
+
+    // Сохраняем только те упражнения, где есть хотя бы один подход
+    const filledResults = this.active.results.filter(r => r.sets.length > 0);
+
+    if (!filledResults.length) {
+      Toast.show('Нет данных для сохранения');
+      this.active = null;
+      Modal.close();
+      return;
+    }
+
+    const workout = {
+      id: Utils.uid(),
+      clientId: this.active.clientId,
+      clientName: this.active.clientName,
+      date: new Date().toISOString(),
+      startedAt: this.active.startedAt,
+      results: filledResults,
+      early
+    };
+
+    State.data.workouts.unshift(workout);
+    State.save();
+
+    this.active = null;
+    Modal.close();
+
+    Toast.show(early ? '✅ Сохранено (досрочно)' : '🎉 Тренировка завершена!');
+    App.updateStats();
+    History.render();
+  }
+};
+
+/* ==================== ИСТОРИЯ ==================== */
+const History = {
+  render() {
+    const container = document.getElementById('historyList');
+    const list = State.data.workouts;
+
+    if (!list.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="emoji">📈</span>
+          Пока нет завершённых тренировок.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = list.map(w => {
+      const totalSets = w.results.reduce((sum, r) => sum + r.sets.length, 0);
+      const totalVolume = w.results.reduce((sum, r) =>
+        sum + r.sets.reduce((s, set) => s + (set.weight || 0) * (set.reps || 0), 0), 0
+      );
+
+      return `
+        <div class="list-item" onclick="History.openDetail('${w.id}')">
+          <div class="list-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">📋</div>
+          <div class="list-item-info">
+            <div class="list-item-title">${Utils.escape(w.clientName)}</div>
+            <div class="list-item-sub">
+              ${Utils.formatDate(w.date)} • ${w.results.length} упр. • ${totalSets} подходов${totalVolume ? ' • ' + Math.round(totalVolume) + ' кг' : ''}
+            </div>
+          </div>
+          <div class="list-item-actions" onclick="event.stopPropagation()">
+            <button class="icon-btn" onclick="History.delete('${w.id}')">🗑</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  openDetail(id) {
+    const w = State.data.workouts.find(x => x.id === id);
+    if (!w) return;
+
+    const totalVolume = w.results.reduce((sum, r) =>
+      sum + r.sets.reduce((s, set) => s + (set.weight || 0) * (set.reps || 0), 0), 0
+    );
+
+    const body = w.results.map(r => {
+      const setsRows = r.sets.map((s, i) => `
+        <tr>
+          <td>${i + 1}${s.phase ? ' (' + s.phase + ')' : ''}</td>
+          <td>${s.weight != null ? s.weight + ' кг' : '—'}</td>
+          <td>${s.reps != null ? s.reps : '—'}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <div style="background:var(--bg-input);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:8px;">${Utils.escape(r.name)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+            Цель: ${r.repsTarget} × ${r.totalSets}
+          </div>
+          <table class="data-table">
+            <tr><th>#</th><th>Вес</th><th>Повторы</th></tr>
+            ${setsRows}
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    Modal.open({
+      title: `${w.clientName} — ${Utils.formatDate(w.date)}`,
+      body: `
+        <div class="cards-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="card">
+            <div class="card-icon">🏋️</div>
+            <div class="card-value">${w.results.length}</div>
+            <div class="card-label">Упражнений</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📊</div>
+            <div class="card-value">${Math.round(totalVolume)}</div>
+            <div class="card-label">Объём (кг)</div>
+          </div>
+        </div>
+        ${w.early ? '<div class="badge" style="background:var(--warn-bg);color:var(--warn);">⚠️ Завершена досрочно</div>' : ''}
+        <h3 style="margin-top:16px;">📋 Детали</h3>
+        ${body}
+      `,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close()">Закрыть</button>
+        <button class="btn-primary" onclick="Exporter.exportWorkout('${w.id}')">📄 В Word</button>
+      `
+    });
+  },
+
+  delete(id) {
+    Modal.confirm('Удалить запись тренировки?', () => {
+      State.data.workouts = State.data.workouts.filter(w => w.id !== id);
+      State.save();
+      Modal.close();
+      this.render();
+      App.updateStats();
+      Toast.show('🗑 Удалено');
+    });
+  }
+};
+
+/* ==================== ЭКСПОРТ В WORD ==================== */
+const Exporter = {
+  exportWorkout(workoutId) {
+    const w = State.data.workouts.find(x => x.id === workoutId);
+    if (!w) return;
+
+    const totalVolume = w.results.reduce((sum, r) =>
+      sum + r.sets.reduce((s, set) => s + (set.weight || 0) * (set.reps || 0), 0), 0
+    );
+
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:w="urn:schemas-microsoft-com:office:word"
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; }
+          h1 { font-size: 18pt; color: #ff6b35; border-bottom: 2px solid #ff6b35; padding-bottom: 6px; }
+          h2 { font-size: 13pt; color: #222; margin-top: 16px; }
+          table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+          th { background: #f0f0f0; padding: 6px 10px; text-align: left; font-size: 10pt; border: 1px solid #ccc; }
+          td { padding: 6px 10px; border: 1px solid #ddd; font-size: 10pt; }
+          .meta { color: #666; font-size: 10pt; margin-bottom: 12px; }
+          .ex-block { margin-bottom: 18px; page-break-inside: avoid; }
+          .ex-title { font-weight: bold; font-size: 12pt; margin-bottom: 4px; }
+          .ex-target { color: #888; font-size: 9pt; margin-bottom: 6px; }
+          .footer { margin-top: 30px; font-size: 9pt; color: #888; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>🏋️ Отчёт о тренировке</h1>
+        <div class="meta">
+          <b>Клиент:</b> ${Utils.escape(w.clientName)}<br>
+          <b>Дата:</b> ${Utils.formatDate(w.date)}<br>
+          <b>Всего упражнений:</b> ${w.results.length}<br>
+          <b>Общий объём:</b> ${Math.round(totalVolume)} кг
+        </div>
+    `;
+
+    w.results.forEach((r, idx) => {
+      html += `
+        <div class="ex-block">
+          <div class="ex-title">${idx + 1}. ${Utils.escape(r.name)}</div>
+          <div class="ex-target">Цель: ${r.repsTarget} × ${r.totalSets} подходов</div>
+          <table>
+            <tr><th style="width:60px;">Подход</th><th style="width:100px;">Вес (кг)</th><th style="width:100px;">Повторы</th></tr>
+            ${r.sets.map((s, i) => `
+              <tr>
+                <td>${i + 1}${s.phase ? ' (' + s.phase + ')' : ''}</td>
+                <td>${s.weight != null ? s.weight : '—'}</td>
+                <td>${s.reps != null ? s.reps : '—'}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+      `;
+    });
+
+    html += `
+        <div class="footer">
+          Экспортировано из приложения «Тренер» • ${Utils.formatDate(new Date().toISOString())}
+        </div>
+      </body></html>
+    `;
+
+    this.download(html, `Тренировка_${w.clientName}_${Utils.formatDate(w.date).replace(/\./g, '-')}.doc`);
+  },
+
+  exportClient(clientId) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return;
+
+    let programHtml = '';
+    (c.program || []).forEach((block, idx) => {
+      if (block.type === 'single') {
+        const ex = State.data.exercises.find(e => e.id === block.exerciseId);
+        if (!ex) return;
+        programHtml += `
+          <div class="ex-block">
+            <div class="ex-title">${idx + 1}. ${Utils.escape(ex.name)}</div>
+            <div class="ex-target">${block.sets} × ${block.reps} • отдых ${block.rest} сек</div>
+            <div style="font-size:10pt;color:#555;">
+              <b>Мышцы:</b> ${Utils.escape(ex.muscles || '')}<br>
+              ${ex.technique && ex.technique.length ? '<b>Техника:</b><br>' + ex.technique.map(t => '• ' + Utils.escape(t)).join('<br>') : ''}
+              ${ex.mistakes && ex.mistakes.length ? '<br><b>Ошибки:</b><br>' + ex.mistakes.map(m => '⚠ ' + Utils.escape(m)).join('<br>') : ''}
+              ${ex.tip ? '<br><b>💡 Совет:</b> ' + Utils.escape(ex.tip) : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        const a = State.data.exercises.find(e => e.id === block.exA);
+        const b = State.data.exercises.find(e => e.id === block.exB);
+        programHtml += `
+          <div class="ex-block">
+            <div class="ex-title">${idx + 1}. СУПЕРСЕТ</div>
+            <div class="ex-target">${block.sets} × ${block.reps} • отдых ${block.rest} сек (после А+Б)</div>
+            <div style="font-size:10pt;color:#555;margin-top:6px;">
+              <b>🅰️ ${a ? Utils.escape(a.name) : '—'}</b><br>
+              ${a && a.technique ? a.technique.map(t => '• ' + Utils.escape(t)).join('<br>') : ''}
+              <br><br>
+              <b>🅱️ ${b ? Utils.escape(b.name) : '—'}</b><br>
+              ${b && b.technique ? b.technique.map(t => '• ' + Utils.escape(t)).join('<br>') : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office"
+            xmlns:w="urn:schemas-microsoft-com:office:word"
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; }
+          h1 { font-size: 18pt; color: #ff6b35; border-bottom: 2px solid #ff6b35; padding-bottom: 6px; }
+          .meta { color: #666; font-size: 10pt; margin-bottom: 16px; }
+          .ex-block { margin-bottom: 18px; page-break-inside: avoid; }
+          .ex-title { font-weight: bold; font-size: 12pt; color: #222; }
+          .ex-target { color: #ff6b35; font-size: 10pt; margin-bottom: 6px; font-weight: 600; }
+          .footer { margin-top: 30px; font-size: 9pt; color: #888; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>🏋️ Программа тренировок</h1>
+        <div class="meta">
+          <b>Клиент:</b> ${Utils.escape(c.name)}<br>
+          ${c.goal ? '<b>Цель:</b> ' + Utils.escape(c.goal) + '<br>' : ''}
+          ${c.notes ? '<b>Заметки:</b> ' + Utils.escape(c.notes) + '<br>' : ''}
+          <b>Дата создания:</b> ${Utils.formatDate(c.createdAt || new Date().toISOString())}
+        </div>
+        ${programHtml || '<p>Программа пока пуста.</p>'}
+        <div class="footer">
+          Экспортировано из приложения «Тренер» • ${Utils.formatDate(new Date().toISOString())}
+        </div>
+      </body></html>
+    `;
+
+    this.download(html, `Программа_${c.name}.doc`);
+  },
+
+  exportAll() {
+    const data = JSON.stringify(State.data, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trainer_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Toast.show('💾 Резервная копия сохранена');
+  },
+
+  download(html, filename) {
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Toast.show('📄 Файл сохранён');
+  }
+};
+
+/* ==================== ИНТЕГРАЦИЯ В APP ==================== */
+const _appInit4 = App.init;
+App.init = function() {
+  _appInit4.call(this);
+
+  // Кнопка экспорта программы в карточке клиента
+  const _clientsOpenDetail = Clients.openDetail;
+  Clients.openDetail = function(id) {
+    _clientsOpenDetail.call(this, id);
+    // Добавляем кнопку экспорта после рендера
+    setTimeout(() => {
+      const footer = document.getElementById('modalFooter');
+      if (footer && footer.querySelector('.btn-primary')) {
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'btn-ghost';
+        exportBtn.textContent = '📄';
+        exportBtn.title = 'Экспорт в Word';
+        exportBtn.onclick = () => Exporter.exportClient(id);
+        footer.insertBefore(exportBtn, footer.firstChild);
+      }
+    }, 50);
+  };
+};
+
+// Переопределяем goTo для истории
+const _appGoTo4 = App.goTo;
+App.goTo = function(tab) {
+  _appGoTo4.call(this, tab);
+  if (tab === 'history') History.render();
+};
+
+// Дополнительная кнопка на вкладке «Обзор» — экспорт всего
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const quickActions = document.querySelector('#tab-dashboard .quick-actions');
+    if (quickActions && !document.getElementById('exportAllBtn')) {
+      const btn = document.createElement('button');
+      btn.id = 'exportAllBtn';
+      btn.className = 'btn-secondary btn-block';
+      btn.textContent = '💾 Экспорт данных (JSON)';
+      btn.onclick = () => Exporter.exportAll();
+      quickActions.appendChild(btn);
+    }
+  }, 300);
+});
+</script>
+
+</body>
+</html>
