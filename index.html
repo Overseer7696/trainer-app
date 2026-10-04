@@ -2939,10 +2939,10 @@ const Schedule = {
     this.render();
   },
 
-  renderDay() {
+renderDay() {
     const isoDate = this.currentDate;
     const todayISO = Utils.todayISO();
-    const nowHour = new Date().getHours();
+    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
     const isToday = isoDate === todayISO;
     const hours = this.getHoursForDate(isoDate);
 
@@ -2950,57 +2950,99 @@ const Schedule = {
       return `<div style="background:var(--bg-input);border-radius:10px;padding:40px 20px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">🛌</div><div style="font-size:16px;font-weight:600;margin-bottom:6px;">Выходной день</div><button class="btn-secondary" onclick="Schedule.openSettings()">⚙️ Изменить</button></div>`;
     }
 
-    const total = hours.end - hours.start;
+    const totalMinutes = (hours.end - hours.start) * 60;
     const records = this.recordsForDate(isoDate);
-    const busyHours = records.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + Math.ceil((r.duration || 60) / 60), 0);
-    const freeHours = Math.max(0, total - busyHours);
+    const busyMinutes = records.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + (r.duration || 60), 0);
+    const freeMinutes = Math.max(0, totalMinutes - busyMinutes);
 
-    let html = `<div style="background:var(--bg-input);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;font-size:13px;"><span>🟧 Занято: <b>${busyHours}</b></span><span>🟢 Свободно: <b>${freeHours}</b></span><span>👥 Записей: <b>${records.length}</b></span></div>`;
+    const fmtMin = (m) => {
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      if (h === 0) return `${mm} мин`;
+      if (mm === 0) return `${h} ч`;
+      return `${h} ч ${mm} мин`;
+    };
 
-    for (let h = hours.start; h < hours.end; h++) {
-      const record = this.getRecordAtHour(isoDate, h);
-      const isPast = isToday && h < nowHour;
-      const isNow = isToday && h === nowHour;
-      const isRecordStart = record && parseInt((record.time || '00:00').split(':')[0]) === h;
+    let html = `<div style="background:var(--bg-input);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;font-size:12px;flex-wrap:wrap;gap:6px;">
+      <span>🟧 Занято: <b>${fmtMin(busyMinutes)}</b></span>
+      <span>🟢 Свободно: <b>${fmtMin(freeMinutes)}</b></span>
+      <span>👥 Записей: <b>${records.length}</b></span>
+    </div>`;
+
+    const SLOT = 30;
+    const startMin = hours.start * 60;
+    const endMin = hours.end * 60;
+
+    for (let m = startMin; m < endMin; m += SLOT) {
+      const h = Math.floor(m / 60);
+      const min = m % 60;
+      const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      const slotEnd = m + SLOT;
+
+      // Ищем запись, начавшуюся ИМЕННО в этом слоте
+      const record = records.find(r => {
+        const [rh, rm] = (r.time || '00:00').split(':').map(Number);
+        const rStart = rh * 60 + rm;
+        return rStart === m;
+      });
 
       if (record) {
-        if (isRecordStart) {
-          const client = State.data.clients.find(c => c.id === record.clientId);
-          const clientName = client ? client.name : 'Удалён';
-          const color = this.statusColor(record);
-          const icon = this.statusIcon(record);
-          const duration = record.duration || 60;
-          const spanHours = Math.ceil(duration / 60);
-          const height = spanHours * 66;
-          const startTime = record.time || `${String(h).padStart(2, '0')}:00`;
-          const endH = h + Math.floor(duration / 60);
-          const endM = duration % 60;
-          const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+        const client = State.data.clients.find(c => c.id === record.clientId);
+        const clientName = client ? client.name : 'Удалён';
+        const color = this.statusColor(record);
+        const icon = this.statusIcon(record);
+        const duration = record.duration || 60;
+        const rStart = m;
+        const rEnd = rStart + duration;
+        const eH = Math.floor(rEnd / 60);
+        const eM = rEnd % 60;
+        const endTime = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+        const startTime = record.time || '00:00';
 
-          html += `
-            <div style="display:flex;gap:8px;margin-bottom:6px;height:${height}px;">
-              <div style="width:52px;flex-shrink:0;font-size:12px;color:var(--text-muted);text-align:right;padding-top:12px;">${String(h).padStart(2, '0')}:00</div>
-              <div style="flex:1;background:${color};border-radius:10px;padding:10px 14px;color:#fff;cursor:pointer;" onclick="Schedule.openDetail('${record.id}')">
-                <div style="display:flex;justify-content:space-between;"><div style="font-weight:600;font-size:14px;">${Utils.escape(clientName)}</div><div>${icon}</div></div>
-                <div style="font-size:11px;opacity:0.9;margin-top:2px;">${startTime}–${endTime}${record.note ? ' • ' + Utils.escape(record.note) : ''}</div>
-              </div>
-            </div>
-          `;
-        }
-      } else {
-        const bgColor = isPast ? 'var(--bg-input)' : isNow ? 'rgba(255,107,53,0.15)' : 'var(--success-bg)';
-        const borderColor = isPast ? 'var(--border)' : isNow ? 'var(--accent)' : 'var(--success)';
-        const textColor = isPast ? 'var(--text-muted)' : 'var(--success)';
         html += `
-          <div style="display:flex;gap:8px;margin-bottom:6px;">
-            <div style="width:52px;flex-shrink:0;font-size:12px;color:var(--text-muted);text-align:right;padding-top:12px;">${String(h).padStart(2, '0')}:00</div>
-            <div style="flex:1;background:${bgColor};border:1.5px dashed ${borderColor};border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:${textColor};font-size:13px;" onclick="Schedule.openForm(null, '${isoDate}', ${h})">
-              <span>${isPast ? '— прошло' : isNow ? '— сейчас' : 'свободно'}</span>
-              ${!isPast ? '<span style="font-weight:600;font-size:18px;">+</span>' : ''}
+          <div style="display:flex;gap:8px;margin-bottom:3px;height:44px;">
+            <div style="width:52px;flex-shrink:0;font-size:11px;color:var(--text-muted);text-align:right;padding-top:14px;">
+              ${timeStr}
+            </div>
+            <div style="flex:1;background:${color};border-radius:8px;color:#fff;cursor:pointer;padding:6px 10px;overflow:hidden;"
+                 onclick="Schedule.openDetail('${record.id}')">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="font-weight:600;font-size:13px;">${Utils.escape(clientName)}</div>
+                <div style="font-size:13px;">${icon}</div>
+              </div>
+              <div style="font-size:10px;opacity:0.9;margin-top:1px;">
+                ${startTime}–${endTime}${record.note ? ' • ' + Utils.escape(record.note) : ''}
+              </div>
             </div>
           </div>
         `;
+
+        // Пропускаем слоты, перекрытые длительностью записи
+        const skipUntil = Math.ceil(duration / SLOT) - 1;
+        m += skipUntil * SLOT;
+        continue;
       }
+
+      // Свободный слот
+      const isPast = isToday && slotEnd <= nowMinutes;
+      const isNow = isToday && m <= nowMinutes && nowMinutes < slotEnd;
+      const bgColor = isPast ? 'var(--bg-input)' : isNow ? 'rgba(255,107,53,0.15)' : 'var(--success-bg)';
+      const borderColor = isPast ? 'var(--border)' : isNow ? 'var(--accent)' : 'var(--success)';
+      const textColor = isPast ? 'var(--text-muted)' : 'var(--success)';
+      const label = isPast ? '— прошло' : isNow ? '— сейчас' : 'свободно';
+
+      html += `
+        <div style="display:flex;gap:8px;margin-bottom:3px;height:44px;">
+          <div style="width:52px;flex-shrink:0;font-size:11px;color:var(--text-muted);text-align:right;padding-top:14px;">
+            ${timeStr}
+          </div>
+          <div style="flex:1;background:${bgColor};border:1.5px dashed ${borderColor};border-radius:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;color:${textColor};font-size:12px;padding:6px 12px;"
+               onclick="Schedule.openForm(null, '${isoDate}', ${h}, ${min})">
+            <span>${label}</span>
+            ${!isPast ? '<span style="font-weight:600;font-size:16px;">+</span>' : ''}
+          </div>
+        </div>
+      `;
     }
     return html;
   },
@@ -3908,7 +3950,435 @@ const App = {
 /* ==================== ЗАПУСК ==================== */
 document.addEventListener('DOMContentLoaded', () => App.init());
 
+
+
 console.log('✅ Часть 4 загружена');
+/* ============================================================
+   ПАТЧ: PDF-программа для клиента (печать / поделиться)
+   ============================================================ */
+(function addClientPDF() {
+
+  // Имя тренера (сохраняется)
+  function getTrainerName() {
+    let name = State.data.settings.trainerName;
+    if (!name) {
+      name = prompt('Введите ваше имя (для документа клиента):', 'Тренер');
+      if (!name) name = 'Тренер';
+      State.data.settings.trainerName = name;
+      State.save();
+    }
+    return name;
+  }
+
+  // Генерация HTML-документа
+  function buildProgramHTML(clientId, selectedDayIndexes) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return '';
+
+    const trainerName = getTrainerName();
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
+
+    let programHTML = '';
+
+    selectedDayIndexes.forEach((dayIdx, num) => {
+      const day = c.days[dayIdx];
+      if (!day) return;
+
+      programHTML += `
+        <div class="day-header">💪 ${escape(day.name)}</div>
+      `;
+
+      day.blocks.forEach((block, i) => {
+        if (block.type === 'single') {
+          const ex = State.data.exercises.find(e => e.id === block.exerciseId);
+          if (!ex) return;
+          programHTML += renderExercise(ex, i + 1, block);
+        } else {
+          const a = State.data.exercises.find(e => e.id === block.exA);
+          const b = State.data.exercises.find(e => e.id === block.exB);
+          if (!a || !b) return;
+          programHTML += `
+            <div class="superset">
+              <div class="superset-title">${i + 1}. СУПЕРСЕТ (А + Б выполняются подряд)</div>
+              ${renderExerciseInline(a, '🅰️', block)}
+              ${renderExerciseInline(b, '🅱️', block)}
+            </div>
+          `;
+        }
+      });
+    });
+
+    return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Программа — ${escape(c.name)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    color: #222;
+    background: #fafafa;
+    line-height: 1.5;
+  }
+  h1 { text-align: center; color: #ff6b35; border-bottom: 3px solid #ff6b35; padding-bottom: 12px; font-size: 26px; margin-top: 0; }
+  .header-info {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 4px solid #ff6b35;
+  }
+  .header-info b { color: #ff6b35; }
+  .header-info div { margin-bottom: 4px; font-size: 14px; }
+  .day-header {
+    background: #ff6b35;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin: 24px 0 16px;
+    font-size: 19px;
+    font-weight: 600;
+  }
+  .exercise {
+    background: #fff;
+    border-radius: 12px;
+    padding: 18px;
+    margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-top: 4px solid #ff6b35;
+    page-break-inside: avoid;
+  }
+  .exercise h3 { margin: 0 0 8px 0; font-size: 17px; color: #1a1a1a; }
+  .muscles { font-size: 13px; color: #888; margin-bottom: 12px; }
+  .photo { text-align: center; margin: 14px 0; }
+  .photo img { max-width: 100%; max-height: 320px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+  .photo-placeholder {
+    background: #f0f0f0; border: 2px dashed #ccc; border-radius: 10px;
+    padding: 40px 20px; color: #999; font-size: 14px;
+  }
+  .schema {
+    background: #f5f5f5; border-left: 4px solid #666; padding: 12px 16px;
+    margin: 12px 0; font-family: 'Courier New', monospace; font-size: 13px;
+    border-radius: 6px; white-space: pre-line;
+  }
+  .technique { margin: 12px 0; padding-left: 20px; }
+  .technique li { margin-bottom: 6px; font-size: 14px; }
+  .mistakes {
+    background: #fff3e0; border-left: 4px solid #e65100; padding: 10px 14px;
+    border-radius: 6px; margin: 12px 0; font-size: 13px;
+  }
+  .mistakes b { color: #e65100; }
+  .tip {
+    background: #fffde7; border-left: 4px solid #fbc02d; padding: 10px 14px;
+    border-radius: 6px; margin: 12px 0; font-size: 13px;
+  }
+  .tip b { color: #f57f17; }
+  .superset {
+    background: #fff8f3; border: 2px dashed #ff6b35; border-radius: 12px;
+    padding: 16px; margin: 16px 0; page-break-inside: avoid;
+  }
+  .superset-title { font-weight: bold; color: #ff6b35; font-size: 15px; margin-bottom: 12px; }
+  .warmup {
+    background: #e3f2fd; border-left: 5px solid #1976d2; border-radius: 10px;
+    padding: 16px 20px; margin: 20px 0; page-break-inside: avoid;
+  }
+  .warmup h2 { color: #1976d2; padding: 0; margin: 0 0 10px 0; font-size: 17px; }
+  .recommendations {
+    background: #f3e5f5; border-left: 5px solid #8e24aa; border-radius: 10px;
+    padding: 16px 20px; margin: 20px 0; page-break-inside: avoid;
+  }
+  .recommendations h2 { color: #8e24aa; padding: 0; margin: 0 0 10px 0; font-size: 17px; }
+  .footer {
+    text-align: center; color: #888; margin-top: 40px; font-size: 13px;
+    border-top: 1px solid #ddd; padding-top: 20px;
+  }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .exercise, .superset, .warmup, .recommendations { page-break-inside: avoid; }
+    .day-header { page-break-before: always; }
+    .day-header:first-of-type { page-break-before: auto; }
+    .photo img { max-height: 250px; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" style="position: sticky; top: 0; background: #fff; padding: 12px; margin: -20px -20px 20px -20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); z-index: 100;">
+  <div style="background: #fffde7; border-left: 4px solid #fbc02d; padding: 10px 14px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; line-height: 1.4;">
+    💡 <b>Как сохранить PDF:</b><br>
+    1. Нажми «📤 Поделиться PDF»<br>
+    2. В окне печати сделай <b>щипок двумя пальцами наружу</b><br>
+    3. Появится PDF → нажми «Поделиться»
+  </div>
+  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+    <button onclick="shareDoc()" style="flex: 1 1 100%; background: #ff6b35; color: #fff; border: none; padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;">📤 Поделиться PDF</button>
+    <button onclick="printDoc()" style="flex: 1 1 45%; background: #f0f0f0; color: #222; border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">🖨 Печать</button>
+    <button onclick="downloadHTML()" style="flex: 1 1 45%; background: #e8f5e9; color: #2e7d32; border: none; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">💾 Скачать HTML</button>
+  </div>
+</div>
+
+<h1>🏋️ Программа тренировок</h1>
+
+<div class="header-info">
+  <div><b>Клиент:</b> ${escape(c.name)}</div>
+  ${c.goal ? `<div><b>Цель:</b> ${escape(c.goal)}</div>` : ''}
+  <div><b>Тренер:</b> ${escape(trainerName)}</div>
+  <div><b>Дата:</b> ${dateStr}</div>
+</div>
+
+<div class="warmup">
+  <h2>🔥 Разминка (перед каждой тренировкой)</h2>
+  <ul>
+    <li><b>Кардио:</b> 10-15 мин (дорожка / велотренажёр / эллипс) — лёгкий темп</li>
+    <li><b>Суставная разминка:</b> шея → плечи → локти → кисти → таз → колени → голеностоп (по 8-10 вращений)</li>
+  </ul>
+</div>
+
+${programHTML}
+
+<div class="recommendations">
+  <h2>📌 Общие рекомендации</h2>
+  <ul>
+    <li><b>Отдых между подходами:</b> 90 секунд</li>
+    <li><b>Темп:</b> 2-3 сек на опускание, 1-2 сек на подъём</li>
+    <li><b>Дыхание:</b> выдох — на усилии, вдох — при возврате</li>
+    <li><b>Заминка:</b> 5-10 мин лёгкого кардио + растяжка по 30 сек</li>
+    <li><b>Прогрессия:</b> увеличивайте вес, когда верхняя граница повторений даётся легко</li>
+  </ul>
+</div>
+
+<div class="footer">
+  Составлено тренером ${escape(trainerName)} • ${dateStr}
+</div>
+
+<script>
+function printDoc() {
+  try {
+    window.print();
+  } catch (e) {
+    fallbackDownload();
+  }
+}
+
+function shareDoc() {
+  // Сразу вызываем печать — там PDF
+  try {
+    window.print();
+  } catch (e) {
+    fallbackDownload();
+  }
+}
+
+function fallbackDownload() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Программа_' + (document.title || 'клиента').replace(/[^\wа-яёА-ЯЁ\-_]/g, '_') + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadHTML() {
+  fallbackDownload();
+}
+<\/script>
+
+</body>
+</html>`;
+  }
+
+  function renderExercise(ex, num, block) {
+    const photoHTML = ex.photo
+      ? `<div class="photo"><img src="${escape(ex.photo)}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'photo-placeholder\\'>📷 Фото: ${escape(ex.name)}</div>'"></div>`
+      : `<div class="photo-placeholder">📷 Фото: ${escape(ex.name)}</div>`;
+
+    const schemaHTML = ex.schema
+      ? `<div class="schema">${escape(ex.schema)}</div>` : '';
+
+    const techHTML = (ex.technique || []).length
+      ? `<h4 style="margin: 12px 0 6px; font-size: 14px;">✅ Техника</h4><ol class="technique">${ex.technique.map(t => `<li>${escape(t)}</li>`).join('')}</ol>` : '';
+
+    const mistakesHTML = (ex.mistakes || []).length
+      ? `<div class="mistakes"><b>⚠️ Ошибки:</b> ${ex.mistakes.map(escape).join('; ')}</div>` : '';
+
+    const tipHTML = ex.tip
+      ? `<div class="tip"><b>💡 Совет:</b> ${escape(ex.tip)}</div>` : '';
+
+    return `
+      <div class="exercise">
+        <h3>${num}. ${escape(ex.name)}</h3>
+        <div class="muscles">${escape(ex.muscles || '')}</div>
+        <div class="muscles"><b>${block.sets} × ${escape(block.reps)}</b> • отдых ${block.rest} сек</div>
+        ${photoHTML}
+        ${schemaHTML}
+        ${techHTML}
+        ${mistakesHTML}
+        ${tipHTML}
+      </div>
+    `;
+  }
+
+  function renderExerciseInline(ex, prefix, block) {
+    const photoHTML = ex.photo
+      ? `<div class="photo"><img src="${escape(ex.photo)}" alt="" onerror="this.style.display='none'"></div>`
+      : '';
+
+    const techHTML = (ex.technique || []).length
+      ? `<div class="technique" style="margin-top: 8px;">${ex.technique.map(t => '• ' + escape(t)).join('<br>')}</div>` : '';
+
+    return `
+      <div style="margin-bottom: 14px;">
+        <h3 style="font-size: 15px; margin: 0 0 6px;">${prefix} ${escape(ex.name)}</h3>
+        <div class="muscles" style="margin-bottom: 8px;">${escape(ex.muscles || '')}</div>
+        ${photoHTML}
+        ${techHTML}
+        ${ex.tip ? `<div class="tip" style="margin-top: 8px;"><b>💡</b> ${escape(ex.tip)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function escape(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Открыть документ
+  function openProgram(clientId, dayIndexes) {
+    const html = buildProgramHTML(clientId, dayIndexes);
+    if (!html) { Toast.show('⚠️ Не удалось создать документ'); return; }
+
+    // Пробуем открыть в новой вкладке
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+
+    const newWindow = window.open(url, '_blank');
+
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      // Fallback — открываем в модалке
+      URL.revokeObjectURL(url);
+      openInModal(html);
+      Toast.show('💡 В модалке нажми «Печать» для PDF');
+    } else {
+      Toast.show('📄 Документ открыт в новой вкладке');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+  }
+
+  // Fallback — модалка с документом
+  function openInModal(html) {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%;height:70vh;border:none;border-radius:10px;background:#fff;';
+    iframe.srcdoc = html;
+
+    Modal.open({
+      title: '📄 Программа клиента',
+      body: `<div id="pdfPreview" style="margin:-10px;"></div>`,
+      footer: `<button class="btn-secondary" onclick="Modal.close()">Закрыть</button>`
+    });
+
+    setTimeout(() => {
+      const el = document.getElementById('pdfPreview');
+      if (el) el.appendChild(iframe);
+    }, 50);
+  }
+
+  // Диалог выбора дней
+  function openDaySelector(clientId) {
+    const c = State.data.clients.find(x => x.id === clientId);
+    if (!c) return;
+
+    // Если один день — сразу
+    if (c.days.length === 1) {
+      openProgram(clientId, [0]);
+      return;
+    }
+
+    // Проверка на пустые дни
+    const validDays = c.days.map((d, i) => ({ day: d, idx: i })).filter(x => x.day.blocks && x.day.blocks.length);
+    if (!validDays.length) {
+      Toast.show('⚠️ В программе нет упражнений');
+      return;
+    }
+
+    const checkboxes = validDays.map(x => `
+      <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-input);border-radius:10px;margin-bottom:8px;cursor:pointer;">
+        <input type="checkbox" class="pdf-day-cb" value="${x.idx}" checked style="width:20px;height:20px;margin:0;">
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${escape(x.day.name)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${x.day.blocks.length} ${x.day.blocks.length === 1 ? 'упражнение' : 'упражнений'}</div>
+        </div>
+      </label>
+    `).join('');
+
+    Modal.open({
+      title: '📄 Программа для клиента',
+      body: `
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Выберите дни для печати:</p>
+        ${checkboxes}
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn-ghost" style="flex:1;font-size:13px;" onclick="document.querySelectorAll('.pdf-day-cb').forEach(cb => cb.checked = true)">✓ Все</button>
+          <button class="btn-ghost" style="flex:1;font-size:13px;" onclick="document.querySelectorAll('.pdf-day-cb').forEach(cb => cb.checked = false)">✗ Ничего</button>
+        </div>
+      `,
+      footer: `
+        <button class="btn-secondary" onclick="Modal.close()">Отмена</button>
+        <button class="btn-primary" onclick="ClientPDF.print('${clientId}')">📄 Открыть для печати</button>
+      `
+    });
+  }
+
+  // Публичный API
+  window.ClientPDF = {
+    open: openDaySelector,
+    print: function(clientId) {
+      const selected = [...document.querySelectorAll('.pdf-day-cb:checked')].map(cb => parseInt(cb.value));
+      if (!selected.length) { Toast.show('⚠️ Выберите хотя бы один день'); return; }
+      Modal.close();
+      setTimeout(() => openProgram(clientId, selected), 200);
+    }
+  };
+
+  // Добавляем кнопку в карточку клиента
+  const _origOpenDetail = Clients.openDetail;
+  Clients.openDetail = function(id) {
+    _origOpenDetail.call(this, id);
+
+    // Вставляем кнопку PDF в футер карточки
+    setTimeout(() => {
+      const footer = document.getElementById('modalFooter');
+      if (!footer) return;
+      if (footer.querySelector('.btn-pdf-program')) return;
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-ghost btn-pdf-program';
+      btn.textContent = '📄 PDF';
+      btn.title = 'Программа для клиента';
+      btn.onclick = () => { Modal.close(); setTimeout(() => openDaySelector(id), 100); };
+
+      // Вставляем перед кнопкой "Программа" или "Тренировка"
+      const programBtn = [...footer.querySelectorAll('button')].find(b => b.textContent.includes('Программа'));
+      if (programBtn) {
+        footer.insertBefore(btn, programBtn);
+      } else {
+        footer.appendChild(btn);
+      }
+    }, 100);
+  };
+
+  console.log('✅ Патч: PDF-программа клиента загружена');
+})();
 </script>
 
 </body>
