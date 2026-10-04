@@ -851,6 +851,22 @@ table.data-table td {
 <div id="toast" class="toast hidden"></div>
 
 <script>
+// ============================================================
+// КОНТРОЛЬ ВЕРСИИ
+// ============================================================
+const APP_VERSION = '2.0.1'; // Меняй это число при каждом обновлении на GitHub!
+
+(function checkVersion() {
+  const savedVersion = localStorage.getItem('app_version');
+  if (savedVersion && savedVersion !== APP_VERSION) {
+    console.log('🔄 Версия изменилась, принудительная перезагрузка...');
+    localStorage.setItem('app_version', APP_VERSION);
+    window.location.reload(true);
+  } else {
+    localStorage.setItem('app_version', APP_VERSION);
+  }
+})();
+
 /* ============================================================
    ЧАСТЬ 2: ХРАНИЛИЩЕ, БАЗА, УТИЛИТЫ
    ============================================================ */
